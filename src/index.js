@@ -238,6 +238,12 @@ Make sure to check out the rules and verify yourself to get access to the rest o
 
             await welcomeChannel.send({ embeds: [welcomeEmbed] });
         }
+
+        // Second short welcome message in general chat
+        const generalChannel = await member.guild.channels.fetch('1403980703523274753');
+        if (generalChannel) {
+            await generalChannel.send(`Welcome to **${member.guild.name}**, ${member}! <a:welcome:792286649412878347>`);
+        }
     } catch (error) {
         console.error('Error sending welcome message:', error);
     }
