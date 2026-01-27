@@ -28,8 +28,9 @@ const client = new Client({
 
 client.commands = new Collection();
 const activeReports = new Map();
+const invites = new Collection(); // Cache for invites
 
-client.on('ready', () => {
+client.on('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
     client.user.setPresence({
         activities: [{
@@ -37,6 +38,17 @@ client.on('ready', () => {
             type: 3 // This is for WATCHING type
         }],
         status: 'online'
+    });
+
+    // Cache invites for all guilds
+    client.guilds.cache.forEach(async guild => {
+        try {
+            const currentInvites = await guild.invites.fetch();
+            invites.set(guild.id, new Collection(currentInvites.map((invite) => [invite.code, invite.uses])));
+            console.log(`Cached ${currentInvites.size} invites for ${guild.name}`);
+        } catch (e) {
+            console.log(`Could not cache invites for ${guild.name}`);
+        }
     });
 });
 
@@ -251,6 +263,31 @@ Make sure to check out the rules and verify yourself to get access to the rest o
             await member.roles.add(role);
         } else {
             console.error('Role not found: 791554291647119381');
+        }
+
+        // INVITE TRACKER LOGIC
+        try {
+            const newInvites = await member.guild.invites.fetch();
+            const oldInvites = invites.get(member.guild.id);
+
+            // Find the invite that has an incremented use count
+            const invite = newInvites.find(i => i.uses > oldInvites.get(i.code));
+
+            // Update the cache
+            invites.set(member.guild.id, new Collection(newInvites.map((invite) => [invite.code, invite.uses])));
+
+            if (invite) {
+                const inviter = invite.inviter;
+                const logChannel = await member.guild.channels.fetch('1404858845460828324');
+
+                if (logChannel) {
+                    await logChannel.send(`${member} just joined. They were invited by **${inviter.tag}** who now has **${invite.uses} invites**!`);
+                }
+            } else {
+                console.log('Could not find which invite was used (possibly a vanity URL or unknown).');
+            }
+        } catch (err) {
+            console.error('Invite tracker error:', err);
         }
     } catch (error) {
         console.error('Error in guildMemberAdd:', error);
