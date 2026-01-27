@@ -244,8 +244,16 @@ Make sure to check out the rules and verify yourself to get access to the rest o
         if (generalChannel) {
             await generalChannel.send(`Welcome to **${member.guild.name}**, ${member}! <a:welcome:792286649412878347>`);
         }
+
+        // Auto-role assignment
+        const role = member.guild.roles.cache.get('791554291647119381');
+        if (role) {
+            await member.roles.add(role);
+        } else {
+            console.error('Role not found: 791554291647119381');
+        }
     } catch (error) {
-        console.error('Error sending welcome message:', error);
+        console.error('Error in guildMemberAdd:', error);
     }
 });
 
