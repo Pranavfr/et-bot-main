@@ -215,9 +215,28 @@ client.on('interactionCreate', async interaction => {
 // Handle new member joining
 client.on('guildMemberAdd', async member => {
     try {
-        const welcomeChannel = await member.guild.channels.fetch('1403980703523274753');
+        const welcomeChannel = await member.guild.channels.fetch('1173715333438255184');
         if (welcomeChannel) {
-            await welcomeChannel.send(`Welcome to **${member.guild.name}**, ${member}! We're thrilled to have you here. 🎉`);
+            const welcomeEmbed = new EmbedBuilder()
+                .setColor('#6C3483')
+                .setTitle('<a:start:861476796800040970> WELCOME TO ET OFFICIALS <a:discordlive:792048185634979882>')
+                .setDescription(`
+<a:partypopper:859462570007199744> **Hey, ${member.user.username}!**
+
+Welcome to the server! We are absolutely thrilled to have you join our community. 
+
+Make sure to check out the rules and verify yourself to get access to the rest of the server. We hope you have an amazing time here!
+
+<a:cutedancing:859462002396102676> **Enjoy your stay!**
+                `)
+                .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
+                .setFooter({
+                    text: `Member #${member.guild.memberCount}`,
+                    iconURL: member.guild.iconURL({ dynamic: true })
+                })
+                .setTimestamp();
+
+            await welcomeChannel.send({ embeds: [welcomeEmbed] });
         }
     } catch (error) {
         console.error('Error sending welcome message:', error);
