@@ -1,0 +1,16 @@
+{
+  "name": "et-officials-bot",
+  "version": "1.0.0",
+  "description": "Official bot for ET OFFICIALS with moderation, utility, and reporting features",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "express": "^5.2.1",
+    "nodemon": "^3.0.1"
+  }
+}

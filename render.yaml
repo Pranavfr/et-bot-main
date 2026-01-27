@@ -1,0 +1,6 @@
+{
+    "name": "et-officials-bot",
+    "env": "node",
+    "build": "npm install",
+    "start": "npm start"
+}
