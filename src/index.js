@@ -458,24 +458,7 @@ if (!process.env.TOKEN) {
 }
 
 
-// detailed network debug
-console.log('🔄 STARTING NETWORK DIAGNOSTIC...');
-fetch('https://discord.com/api/v10/gateway')
-    .then(res => {
-        console.log(`✅ Network Test: Reached Discord API. Status: ${res.status}`);
-        return res.json();
-    })
-    .then(data => {
-        console.log('✅ Gateway URL identified:', data.url);
-
-        console.log('🔄 Proceeding to Client Login...');
-        client.login(process.env.TOKEN)
-            .then(() => console.log('✅ Login promise resolved (Success)'))
-            .catch(err => console.error('❌ Login Failed:', err));
-    })
-    .catch(err => {
-        console.error('❌ FATAL NETWORK ERROR: Could not reach Discord API.');
-        console.error('This means the Render server IP is likely BLOCKED by Discord.');
-        console.error('Error Details:', err.code, err.message);
-    });
-
+console.log('🔄 Proceeding to Client Login...');
+client.login(process.env.TOKEN)
+    .then(() => console.log('✅ Login promise resolved (Success)'))
+    .catch(err => console.error('❌ Login Failed:', err));
