@@ -38,7 +38,7 @@ module.exports = {
         }
 
         const endTime = Date.now() + ms;
-        const footerImage = new AttachmentBuilder('./assets/giveaway_footer.jpg', { name: 'giveaway_footer.jpg' });
+        const footerImage = new AttachmentBuilder('./assets/giveaway_footer.png', { name: 'giveaway_footer.png' });
 
         // Create Embed
         const embed = new EmbedBuilder()
@@ -54,7 +54,7 @@ module.exports = {
             `)
             .setImage('https://media.discordapp.net/attachments/1173715333438255184/1173715566675120158/standard_3.gif?ex=65e18f2b&is=65cf1a2b&hm=6a8a2d8a5763566160867056066266050505161066060') // Decorative spacer (optional, can remove if link breaks)
             .setThumbnail(interaction.guild.iconURL())
-            .setFooter({ text: 'ET OFFICIALS GIVEAWAY', iconURL: 'attachment://giveaway_footer.jpg' })
+            .setFooter({ text: 'ET OFFICIALS GIVEAWAY', iconURL: 'attachment://giveaway_footer.png' })
             .setTimestamp(endTime);
 
         // Create Button
@@ -117,7 +117,7 @@ module.exports = {
                 winners.push(users.splice(index, 1)[0]);
             }
 
-            const winner mentions = winners.map(id => `<@${id}>`).join(', ');
+            const winnerMentions = winners.map(id => `<@${id}>`).join(', ');
 
             const endedEmbed = EmbedBuilder.from(embed)
                 .setColor('#000000') // Black/Dark for ended
