@@ -458,7 +458,14 @@ if (!process.env.TOKEN) {
 }
 
 
+
+// Enable verbose debugging to see why login hangs
+client.on('debug', info => console.log(`[DEBUG] ${info}`));
+client.on('warn', info => console.warn(`[WARN] ${info}`));
+client.on('error', error => console.error(`[ERROR] ${error}`));
+
 console.log('🔄 Proceeding to Client Login...');
+
 client.login(process.env.TOKEN)
     .then(() => console.log('✅ Login promise resolved (Success)'))
     .catch(err => console.error('❌ Login Failed:', err));
