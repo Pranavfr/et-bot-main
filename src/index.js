@@ -294,17 +294,50 @@ Make sure to check out the rules and verify yourself to get access to the rest o
     }
 });
 
-// Load commands
+// Load commands and handle Slash Commands
 const fs = require('fs');
 const commandFiles = fs.readdirSync('./src/commands').filter(file => file.endsWith('.js'));
+
+// Import the activeGiveaways map from the giveaway command
+let activeGiveawaysMap;
 
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
     client.commands.set(command.data.name, command);
+
+    // Grab the map reference if it's the giveaway file
+    if (command.data.name === 'giveaway' && command.activeGiveaways) {
+        activeGiveawaysMap = command.activeGiveaways;
+    }
 }
 
 // Handle slash commands
 client.on('interactionCreate', async interaction => {
+    // Handle Giveaway Join Button
+    if (interaction.isButton() && interaction.customId === 'join_giveaway') {
+        if (!activeGiveawaysMap) {
+            // Fallback if map isn't loaded for some reason
+            const giveawayCmd = client.commands.get('giveaway');
+            if (giveawayCmd) activeGiveawaysMap = giveawayCmd.activeGiveaways;
+        }
+
+        const data = activeGiveawaysMap ? activeGiveawaysMap.get(interaction.message.id) : null;
+
+        if (!data) {
+            return interaction.reply({ content: '❌ This giveaway has ended or the data was lost.', ephemeral: true });
+        }
+
+        if (data.users.has(interaction.user.id)) {
+            return interaction.reply({ content: '⚠️ You have already joined this giveaway!', ephemeral: true });
+        }
+
+        // Add user
+        data.users.add(interaction.user.id);
+
+        // Reply
+        return interaction.reply({ content: '✅ **Entry Confirmed!** Good luck! 🍀', ephemeral: true });
+    }
+
     if (!interaction.isCommand()) return;
 
     const command = client.commands.get(interaction.commandName);
