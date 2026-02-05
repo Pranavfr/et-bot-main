@@ -24,12 +24,17 @@ module.exports = {
         .addIntegerOption(option =>
             option.setName('winners')
                 .setDescription('Number of winners (Default: 1)')
+                .setRequired(false))
+        .addIntegerOption(option =>
+            option.setName('required_invites')
+                .setDescription('Minimum invites required to join (Default: 0)')
                 .setRequired(false)),
 
     async execute(interaction) {
         const prize = interaction.options.getString('prize');
         const durationStr = interaction.options.getString('duration');
         const winnerCount = interaction.options.getInteger('winners') || 1;
+        const requiredInvites = interaction.options.getInteger('required_invites') || 0;
 
         // Parse Duration
         const ms = parseDuration(durationStr);
@@ -38,23 +43,24 @@ module.exports = {
         }
 
         const endTime = Date.now() + ms;
-        const footerImage = new AttachmentBuilder('./assets/giveaway_footer.png', { name: 'giveaway_footer.png' });
+        const bannerImage = new AttachmentBuilder('./assets/giveaway_banner.png', { name: 'giveaway_banner.png' });
 
-        // Create Embed
+        // Create Embed (Big Style)
         const embed = new EmbedBuilder()
             .setColor('#FFD700') // Gold color
-            .setTitle('<a:partypopper:859462570007199744>  **PREMIUM GIVEAWAY**  <a:partypopper:859462570007199744>')
+            .setTitle('<a:partypopper:859462570007199744>  **GIVEAWAY**  <a:partypopper:859462570007199744>')
             .setDescription(`
-**Prize:** ${prize}
+**Prize:** <a:discordlive:792048185634979882> **${prize}** <a:discordlive:792048185634979882>
 **Hosted By:** ${interaction.user}
 **Winners:** ${winnerCount}
 **Ends In:** <t:${Math.floor(endTime / 1000)}:R>
+${requiredInvites > 0 ? `**Requirement:** ${requiredInvites} Invites` : ''}
 
 **Join by clicking the button below!**
             `)
-            .setImage('https://media.discordapp.net/attachments/1173715333438255184/1173715566675120158/standard_3.gif?ex=65e18f2b&is=65cf1a2b&hm=6a8a2d8a5763566160867056066266050505161066060') // Decorative spacer (optional, can remove if link breaks)
-            .setThumbnail(interaction.guild.iconURL())
-            .setFooter({ text: 'ET OFFICIALS GIVEAWAY', iconURL: 'attachment://giveaway_footer.png' })
+            .setImage('attachment://giveaway_banner.png') // Big Banner at Bottom
+            // .setThumbnail(interaction.guild.iconURL()) // REMOVED SERVER LOGO
+            .setFooter({ text: 'ET OFFICIALS GIVEAWAY', iconURL: interaction.guild.iconURL() })
             .setTimestamp(endTime);
 
         // Create Button
@@ -66,12 +72,14 @@ module.exports = {
                     .setStyle(ButtonStyle.Primary)
             );
 
-        // Send Message
-        const message = await interaction.reply({
+        // Send Message cleanly (not as a reply to the command)
+        await interaction.reply({ content: '✅ Giveaway started!', ephemeral: true });
+
+        const message = await interaction.channel.send({
+            content: `# 🎉 **GIVEAWAY: ${prize}** 🎉`,
             embeds: [embed],
             components: [row],
-            files: [footerImage],
-            fetchReply: true
+            files: [bannerImage]
         });
 
         // Store Giveaway Data
@@ -80,13 +88,14 @@ module.exports = {
             winners: winnerCount,
             prize: prize,
             host: interaction.user.id,
-            endTime: endTime
+            endTime: endTime,
+            requiredInvites: requiredInvites
         });
 
         // Start Timer to End Giveaway
         setTimeout(async () => {
             const data = activeGiveaways.get(message.id);
-            if (!data) return; // Already ended or corrupted
+            if (!data) return; // Already ended
 
             const users = Array.from(data.users);
 
@@ -123,7 +132,7 @@ module.exports = {
                 .setColor('#000000') // Black/Dark for ended
                 .setDescription(`
 **Prize:** ${prize}
-**Winners:** ${mentions}
+**Winners:** ${winnerMentions}
 **Hosted By:** <@${data.host}>
 **Ended:** <t:${Math.floor(Date.now() / 1000)}:R>
                 `);
@@ -131,7 +140,7 @@ module.exports = {
             await message.edit({ embeds: [endedEmbed], components: [disabledRow] });
 
             // Announce in channel
-            await message.channel.send(`🎉 **CONGRATULATIONS** ${mentions}! You won **${prize}**! 🏆`);
+            await message.channel.send(`<a:partypopper:859462570007199744> **CONGRATULATIONS** ${winnerMentions}! You won **${prize}**! 🏆`);
 
             // Cleanup
             activeGiveaways.delete(message.id);

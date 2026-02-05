@@ -300,6 +300,8 @@ const commandFiles = fs.readdirSync('./src/commands').filter(file => file.endsWi
 
 // Import the activeGiveaways map from the giveaway command
 let activeGiveawaysMap;
+// Import the afkUsers map from the afk command
+let afkUsersMap;
 
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
@@ -309,7 +311,77 @@ for (const file of commandFiles) {
     if (command.data.name === 'giveaway' && command.activeGiveaways) {
         activeGiveawaysMap = command.activeGiveaways;
     }
+    // Grab the map reference if it's the afk file
+    if (command.data.name === 'afk' && command.afkUsers) {
+        afkUsersMap = command.afkUsers;
+    }
 }
+
+// Global Message Handler (AFK Logic + DM Reports)
+client.on('messageCreate', async message => {
+    if (message.author.bot) return;
+
+    // 1. Handle DM reports
+    if (message.channel.type === 1) { // DM channel
+        // ... (Existing DM logic) -> We need to be careful not to duplicate code or break existing flows.
+        // Since I am replacing a block that STARTS at line 55 (client.on('messageCreate'...)), 
+        // I actually need to inject the AFK logic inside the existing listener or create a separate one.
+        // However, the tool prompt requested me to replace the command loading section.
+        // Let's create a SEPARATE listener for AFK to avoid messing up the DM logic complexity, 
+        // OR better yet, let's just insert the logic cleanly.
+    }
+
+    // AFK LOGIC (Ideally this should be in the main message listener or a new one)
+    // To minimize risk, I will add a NEW listener for AFK specifically below the existing one.
+});
+
+// AFK Listener
+client.on('messageCreate', async message => {
+    if (message.author.bot || !message.guild) return;
+
+    // Ensure map is loaded
+    if (!afkUsersMap) {
+        const afkCmd = client.commands.get('afk');
+        if (afkCmd) afkUsersMap = afkCmd.afkUsers;
+    }
+    if (!afkUsersMap) return;
+
+    // 1. Remove AFK if user sends a message
+    if (afkUsersMap.has(message.author.id)) {
+        const data = afkUsersMap.get(message.author.id);
+        afkUsersMap.delete(message.author.id);
+
+        // Remove [AFK] from nickname if present
+        if (message.member.manageable && message.member.displayName.startsWith('[AFK]')) {
+            try {
+                const oldName = message.member.displayName.replace('[AFK] ', '');
+                await message.member.setNickname(oldName);
+            } catch (e) {
+                // Ignore permission error
+            }
+        }
+
+        await message.reply({ content: `👋 **Welcome back, ${message.author}!** I've removed your AFK status.`, allowedMentions: { repliedUser: true } })
+            .then(msg => setTimeout(() => msg.delete().catch(() => { }), 5000)); // Delete after 5s to keep chat clean
+    }
+
+    // 2. Check if mentioned user is AFK
+    if (message.mentions.users.size > 0) {
+        message.mentions.users.forEach(async user => {
+            if (afkUsersMap.has(user.id)) {
+                const data = afkUsersMap.get(user.id);
+                // Calculate time since AFK
+                const timeAgo = Math.floor((Date.now() - data.timestamp) / 1000);
+
+                const embed = new EmbedBuilder()
+                    .setColor('#3498DB') // Blueish
+                    .setDescription(`💤 **${user.username}** is currently AFK: **${data.reason}**\n*(Since <t:${Math.floor(data.timestamp / 1000)}:R>)*`);
+
+                await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
+            }
+        });
+    }
+});
 
 // Handle slash commands
 client.on('interactionCreate', async interaction => {
@@ -329,6 +401,30 @@ client.on('interactionCreate', async interaction => {
 
         if (data.users.has(interaction.user.id)) {
             return interaction.reply({ content: '⚠️ You have already joined this giveaway!', ephemeral: true });
+        }
+
+        // Check Invite Requirement
+        if (data.requiredInvites && data.requiredInvites > 0) {
+            try {
+                // Fetch all invites to check current count
+                // Note: Fetching invites can be API intensive if spammed, but necessary for accuracy
+                const invites = await interaction.guild.invites.fetch();
+                const userInvites = invites
+                    .filter(i => i.inviter && i.inviter.id === interaction.user.id)
+                    .reduce((acc, invite) => acc + invite.uses, 0);
+
+                if (userInvites < data.requiredInvites) {
+                    return interaction.reply({
+                        content: `❌ **Requirement Not Met!**\nThis giveaway requires **${data.requiredInvites} invites**.\nYou currently have **${userInvites} invites**.\n\nStart inviting efficiently to join next time!`,
+                        ephemeral: true
+                    });
+                }
+            } catch (err) {
+                console.error('Error checking invites for giveaway:', err);
+                // On error, choosing to fail open (allow join) or closed (deny)? 
+                // Let's fail closed to prevent exploit, but log it.
+                return interaction.reply({ content: '❌ Could not verify your invites at this moment. Please try again.', ephemeral: true });
+            }
         }
 
         // Add user
