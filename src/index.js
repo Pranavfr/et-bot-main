@@ -450,4 +450,14 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-client.login(process.env.TOKEN);
+// Debugging Token presence
+if (!process.env.TOKEN) {
+    console.error('❌ FATAL ERROR: process.env.TOKEN is missing! Please check Render Environment Variables.');
+} else {
+    console.log('✅ Token detected (length: ' + process.env.TOKEN.length + ')');
+}
+
+console.log('🔄 Attempting to log into Discord...');
+client.login(process.env.TOKEN)
+    .then(() => console.log('✅ Login promise resolved (Success)'))
+    .catch(err => console.error('❌ Login Failed:', err));
